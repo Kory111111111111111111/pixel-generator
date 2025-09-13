@@ -6,11 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Palette, RefreshCw, Settings, Upload, Image as ImageIcon } from 'lucide-react';
-import { generatePixelArt, PixelArtRequest } from '@/lib/gemini';
+import { generatePixelArtImage, ImageGenerationRequest } from '@/lib/gemini-image';
 import { convertToPixelArt, applyPixelationEffect, getDefaultPixelationOptions, PixelationOptions } from '@/lib/pixelation';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -22,7 +21,6 @@ export default function PixelArtGenerator() {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('16-bit retro gaming');
   const [size, setSize] = useState('32x32');
-  const [colors, setColors] = useState(16);
   const [apiKey, setApiKey] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -75,15 +73,14 @@ export default function PixelArtGenerator() {
     setIsGenerating(true);
     
     try {
-      const request: PixelArtRequest = {
+      const request: ImageGenerationRequest = {
         prompt: prompt.trim(),
         style,
         size,
-        colors,
         apiKey: apiKey.trim()
       };
 
-      const result = await generatePixelArt(request);
+      const result = await generatePixelArtImage(request);
       
       if (result.success && result.imageData) {
         const newArt = {
@@ -319,21 +316,6 @@ export default function PixelArtGenerator() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-foreground">Color Palette: {colors} colors</Label>
-                <Slider
-                  value={[colors]}
-                  onValueChange={([value]) => setColors(value)}
-                  min={4}
-                  max={32}
-                  step={2}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>4 colors</span>
-                  <span>32 colors</span>
-                </div>
-              </div>
 
               <Button
                 onClick={handleGenerate}
@@ -375,8 +357,10 @@ export default function PixelArtGenerator() {
                           alt="Generated pixel art"
                           width={256}
                           height={256}
-                          className="max-w-full h-auto border-2 rounded-lg"
-                          style={{ imageRendering: 'pixelated' }}
+                      className="max-w-full h-auto border-2 rounded-lg"
+                      style={{ 
+                        imageRendering: 'pixelated'
+                      }}
                         />
                       </div>
                       <div className="flex gap-2">
@@ -479,8 +463,10 @@ export default function PixelArtGenerator() {
                           alt="Pixelated image"
                           width={256}
                           height={256}
-                          className="max-w-full h-auto border-2 rounded-lg"
-                          style={{ imageRendering: 'pixelated' }}
+                      className="max-w-full h-auto border-2 rounded-lg"
+                      style={{ 
+                        imageRendering: 'pixelated'
+                      }}
                         />
                       </div>
                       <div className="flex gap-2">
