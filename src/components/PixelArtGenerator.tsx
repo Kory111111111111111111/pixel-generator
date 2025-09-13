@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { ThemeToggle } from './ThemeToggle';
 import ImageUpload from './ImageUpload';
 import PixelationSettings from './PixelationSettings';
+import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 
 export default function PixelArtGenerator() {
   const [prompt, setPrompt] = useState('');
@@ -167,8 +168,14 @@ export default function PixelArtGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 p-4">
-      <div className="max-w-6xl mx-auto">
+    <StarsBackground 
+      className="fixed inset-0 w-full h-full"
+      starColor="hsl(var(--primary))"
+      factor={0.02}
+      speed={80}
+    >
+      <div className="relative z-10 p-4">
+        <div className="max-w-6xl mx-auto">
         {/* Header with Theme Toggle */}
         <div className="flex justify-between items-start mb-8">
           <div className="flex-1 text-center">
@@ -178,8 +185,8 @@ export default function PixelArtGenerator() {
             <p className="text-muted-foreground text-lg mb-4">
               Create stunning pixel art with AI-powered generation
             </p>
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 max-w-2xl mx-auto">
-              <p className="text-primary-foreground/80 text-sm">
+            <div className="bg-card/95 backdrop-blur-sm border border-primary/30 rounded-lg p-4 max-w-2xl mx-auto shadow-lg">
+              <p className="text-card-foreground text-sm">
                 <strong>Getting Started:</strong> You&apos;ll need a free Google Gemini API key. 
                 Click &quot;Show API Key Field&quot; below and get your key from{' '}
                 <a 
@@ -214,7 +221,7 @@ export default function PixelArtGenerator() {
           <TabsContent value="generate" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Generation Panel */}
-              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+              <Card className="bg-card/95 backdrop-blur-sm border border-border/70 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-card-foreground flex items-center gap-2">
                     <Palette className="h-5 w-5" />
@@ -338,7 +345,7 @@ export default function PixelArtGenerator() {
               </Card>
 
               {/* Generated Image Display */}
-              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+              <Card className="bg-card/95 backdrop-blur-sm border border-border/70 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-card-foreground flex items-center gap-2">
                     <Settings className="h-5 w-5" />
@@ -412,7 +419,7 @@ export default function PixelArtGenerator() {
             {/* Pixelation Controls and Results */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pixelation Button */}
-              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+              <Card className="bg-card/95 backdrop-blur-sm border border-border/70 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-card-foreground flex items-center gap-2">
                     <Upload className="h-5 w-5" />
@@ -444,7 +451,7 @@ export default function PixelArtGenerator() {
               </Card>
 
               {/* Pixelated Image Display */}
-              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+              <Card className="bg-card/95 backdrop-blur-sm border border-border/70 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-card-foreground flex items-center gap-2">
                     <Settings className="h-5 w-5" />
@@ -549,7 +556,8 @@ export default function PixelArtGenerator() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
-    </div>
+    </StarsBackground>
   );
 }
