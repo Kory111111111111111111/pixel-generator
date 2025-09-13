@@ -12,6 +12,7 @@ import { Download, Palette, RefreshCw, Settings } from 'lucide-react';
 import { generatePixelArt, PixelArtRequest } from '@/lib/gemini';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { ThemeToggle } from './ThemeToggle';
 
 export default function PixelArtGenerator() {
   const [prompt, setPrompt] = useState('');
@@ -110,41 +111,47 @@ export default function PixelArtGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 p-4">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            🎨 Pixel Art Generator
-          </h1>
-          <p className="text-gray-300 text-lg mb-4">
-            Create stunning pixel art with AI-powered generation
-          </p>
-          <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 max-w-2xl mx-auto">
-            <p className="text-blue-200 text-sm">
-              <strong>Getting Started:</strong> You&apos;ll need a free Google Gemini API key. 
-              Click &quot;Show API Key Field&quot; below and get your key from{' '}
-              <a 
-                href="https://makersuite.google.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-300 hover:text-blue-200 underline font-semibold"
-              >
-                Google AI Studio
-              </a>
-              {' '}to start generating pixel art!
+        {/* Header with Theme Toggle */}
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex-1 text-center">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              🎨 Pixel Art Generator
+            </h1>
+            <p className="text-muted-foreground text-lg mb-4">
+              Create stunning pixel art with AI-powered generation
             </p>
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 max-w-2xl mx-auto">
+              <p className="text-primary-foreground/80 text-sm">
+                <strong>Getting Started:</strong> You&apos;ll need a free Google Gemini API key. 
+                Click &quot;Show API Key Field&quot; below and get your key from{' '}
+                <a 
+                  href="https://makersuite.google.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary/80 underline font-semibold"
+                >
+                  Google AI Studio
+                </a>
+                {' '}to start generating pixel art!
+              </p>
+            </div>
+          </div>
+          <div className="ml-4">
+            <ThemeToggle />
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Generation Panel */}
-          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+          <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-card-foreground flex items-center gap-2">
                 <Palette className="h-5 w-5" />
                 Generate New Art
               </CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-muted-foreground">
                 Describe your vision and let AI create pixel art for you
               </CardDescription>
             </CardHeader>
@@ -152,13 +159,13 @@ export default function PixelArtGenerator() {
               {/* API Key Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-white">Google Gemini API Key</Label>
+                  <Label className="text-foreground">Google Gemini API Key</Label>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowApiKeyField(!showApiKeyField)}
-                    className="text-gray-300 hover:text-white text-xs"
+                    className="text-muted-foreground hover:text-foreground text-xs"
                   >
                     {showApiKeyField ? 'Hide' : 'Show'} API Key Field
                   </Button>
@@ -170,15 +177,14 @@ export default function PixelArtGenerator() {
                       placeholder="Enter your Google Gemini API key..."
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      className="bg-white/20 border-white/30 text-white placeholder:text-gray-400"
                     />
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Get your free API key from{' '}
                       <a 
                         href="https://makersuite.google.com/" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-blue-300 hover:text-blue-200 underline"
+                        className="text-primary hover:text-primary/80 underline"
                       >
                         Google AI Studio
                       </a>
@@ -187,10 +193,10 @@ export default function PixelArtGenerator() {
                 )}
                 {!showApiKeyField && apiKey && (
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
+                    <Badge variant="secondary" className="bg-green-500/20 text-green-600 border-green-500/30">
                       ✓ API Key Set
                     </Badge>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-muted-foreground">
                       {apiKey.substring(0, 8)}...{apiKey.substring(apiKey.length - 4)}
                     </span>
                   </div>
@@ -198,21 +204,20 @@ export default function PixelArtGenerator() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="prompt" className="text-white">Describe your pixel art</Label>
+                <Label htmlFor="prompt" className="text-foreground">Describe your pixel art</Label>
                 <Input
                   id="prompt"
                   placeholder="A cute cat sitting on a rainbow cloud..."
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="bg-white/20 border-white/30 text-white placeholder:text-gray-400"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-white">Style</Label>
+                  <Label className="text-foreground">Style</Label>
                   <Select value={style} onValueChange={setStyle}>
-                    <SelectTrigger className="bg-white/20 border-white/30 text-white">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -226,9 +231,9 @@ export default function PixelArtGenerator() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Size</Label>
+                  <Label className="text-foreground">Size</Label>
                   <Select value={size} onValueChange={setSize}>
-                    <SelectTrigger className="bg-white/20 border-white/30 text-white">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -243,7 +248,7 @@ export default function PixelArtGenerator() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-white">Color Palette: {colors} colors</Label>
+                <Label className="text-foreground">Color Palette: {colors} colors</Label>
                 <Slider
                   value={[colors]}
                   onValueChange={([value]) => setColors(value)}
@@ -252,7 +257,7 @@ export default function PixelArtGenerator() {
                   step={2}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-gray-400">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>4 colors</span>
                   <span>32 colors</span>
                 </div>
@@ -261,7 +266,7 @@ export default function PixelArtGenerator() {
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating || !prompt.trim()}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                className="w-full"
               >
                 {isGenerating ? (
                   <>
@@ -279,13 +284,13 @@ export default function PixelArtGenerator() {
           </Card>
 
           {/* Generated Image Display */}
-          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+          <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-card-foreground flex items-center gap-2">
                 <Settings className="h-5 w-5" />
                 Generated Art
               </CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-muted-foreground">
                 Your AI-generated pixel art will appear here
               </CardDescription>
             </CardHeader>
@@ -298,14 +303,14 @@ export default function PixelArtGenerator() {
                       alt="Generated pixel art"
                       width={256}
                       height={256}
-                      className="max-w-full h-auto border-2 border-white/20 rounded-lg"
+                      className="max-w-full h-auto border-2 rounded-lg"
                       style={{ imageRendering: 'pixelated' }}
                     />
                   </div>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleDownload(generatedImage)}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      className="flex-1"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download
@@ -313,15 +318,14 @@ export default function PixelArtGenerator() {
                     <Button
                       onClick={() => setGeneratedImage(null)}
                       variant="outline"
-                      className="border-white/30 text-white hover:bg-white/10"
                     >
                       Clear
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-64 border-2 border-dashed border-white/30 rounded-lg">
-                  <div className="text-center text-gray-400">
+                <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                  <div className="text-center text-muted-foreground">
                     <Palette className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>No pixel art generated yet</p>
                     <p className="text-sm">Enter a prompt and click generate</p>
@@ -334,20 +338,19 @@ export default function PixelArtGenerator() {
 
         {/* Generation History */}
         {generationHistory.length > 0 && (
-          <Card className="mt-6 bg-white/10 backdrop-blur-sm border-white/20">
+          <Card className="mt-6 bg-card/80 backdrop-blur-sm border-border/50">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Generation History</CardTitle>
+                <CardTitle className="text-card-foreground">Generation History</CardTitle>
                 <Button
                   onClick={handleClearHistory}
                   variant="outline"
                   size="sm"
-                  className="border-white/30 text-white hover:bg-white/10"
                 >
                   Clear History
                 </Button>
               </div>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-muted-foreground">
                 Your previously generated pixel art
               </CardDescription>
             </CardHeader>
@@ -360,7 +363,7 @@ export default function PixelArtGenerator() {
                       alt={item.prompt}
                       width={96}
                       height={96}
-                      className="w-full h-24 object-cover rounded-lg border border-white/20 cursor-pointer hover:border-white/40 transition-colors"
+                      className="w-full h-24 object-cover rounded-lg border cursor-pointer hover:border-border/60 transition-colors"
                       style={{ imageRendering: 'pixelated' }}
                       onClick={() => setGeneratedImage(item.image)}
                     />
@@ -368,12 +371,12 @@ export default function PixelArtGenerator() {
                       <Button
                         size="sm"
                         onClick={() => handleDownload(item.image, `pixel-art-${item.id}.png`)}
-                        className="bg-white/20 hover:bg-white/30 text-white"
+                        variant="secondary"
                       >
                         <Download className="h-3 w-3" />
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1 truncate" title={item.prompt}>
+                    <p className="text-xs text-muted-foreground mt-1 truncate" title={item.prompt}>
                       {item.prompt}
                     </p>
                   </div>
