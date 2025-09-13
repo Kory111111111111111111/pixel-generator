@@ -21,9 +21,19 @@ type StarLayerProps = HTMLMotionProps<'div'> & {
 
 function generateStars(count: number, starColor: string) {
   const shadows: string[] = [];
+  
+  // Get viewport dimensions with fallback for SSR
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+  
+  // Generate stars across a much wider area to cover ultrawide monitors
+  // Use 2x viewport width to ensure coverage on ultrawide monitors (up to 8K width)
+  const maxWidth = Math.max(viewportWidth * 2, 8000);
+  const maxHeight = Math.max(viewportHeight * 2, 4000);
+  
   for (let i = 0; i < count; i++) {
-    const x = Math.floor(Math.random() * 4000) - 2000;
-    const y = Math.floor(Math.random() * 4000) - 2000;
+    const x = Math.floor(Math.random() * maxWidth) - (maxWidth / 2);
+    const y = Math.floor(Math.random() * maxHeight) - (maxHeight / 2);
     shadows.push(`${x}px ${y}px ${starColor}`);
   }
   return shadows.join(', ');
@@ -38,17 +48,44 @@ function StarLayer({
   ...props
 }: StarLayerProps) {
   const [boxShadow, setBoxShadow] = React.useState<string>('');
+  const [animationHeight, setAnimationHeight] = React.useState(2000);
 
   React.useEffect(() => {
-    setBoxShadow(generateStars(count, starColor));
+    const generateAndSetStars = () => {
+      setBoxShadow(generateStars(count, starColor));
+    };
+
+    // Generate stars initially
+    generateAndSetStars();
+
+    // Regenerate stars on window resize to adapt to new viewport size
+    const handleResize = () => {
+      generateAndSetStars();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [count, starColor]);
+
+  React.useEffect(() => {
+    const updateHeight = () => {
+      // Use viewport height * 2 for better coverage on ultrawide monitors
+      const newHeight = Math.max(window.innerHeight * 2, 2000);
+      setAnimationHeight(newHeight);
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   return (
     <motion.div
       data-slot="star-layer"
-      animate={{ y: [0, -2000] }}
+      animate={{ y: [0, -animationHeight] }}
       transition={transition}
-      className={cn('absolute top-0 left-0 w-full h-[2000px]', className)}
+      className={cn('absolute top-0 left-0 w-full', className)}
+      style={{ height: `${animationHeight}px` }}
       {...props}
     >
       <div
@@ -60,11 +97,12 @@ function StarLayer({
         }}
       />
       <div
-        className="absolute bg-transparent rounded-full top-[2000px]"
+        className="absolute bg-transparent rounded-full"
         style={{
           width: `${size}px`,
           height: `${size}px`,
           boxShadow: boxShadow,
+          top: `${animationHeight}px`,
         }}
       />
     </motion.div>
@@ -111,7 +149,7 @@ function StarsBackground({
     <div
       data-slot="stars-background"
       className={cn(
-        'relative size-full overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]',
+        'relative size-full overflow-hidden bg-[linear-gradient(180deg,_#262626_0%,_#000_100%)]',
         className,
       )}
       onMouseMove={handleMouseMove}
@@ -122,13 +160,13 @@ function StarsBackground({
         className={cn({ 'pointer-events-none': !pointerEvents })}
       >
         <StarLayer
-          count={1000}
+          count={2000}
           size={1}
           transition={{ repeat: Infinity, duration: speed, ease: 'linear' }}
           starColor={starColor}
         />
         <StarLayer
-          count={400}
+          count={800}
           size={2}
           transition={{
             repeat: Infinity,
@@ -138,7 +176,7 @@ function StarsBackground({
           starColor={starColor}
         />
         <StarLayer
-          count={200}
+          count={400}
           size={3}
           transition={{
             repeat: Infinity,
