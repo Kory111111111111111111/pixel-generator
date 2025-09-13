@@ -70,19 +70,45 @@ The app will be built and exported to the `out` directory, ready for static host
 
 ### Automatic Deployment
 
-This project includes a GitHub Actions workflow that automatically deploys to GitHub Pages:
+This project includes GitHub Actions workflows that automatically deploy to GitHub Pages:
 
 1. **Enable GitHub Pages**:
    - Go to your repository settings
    - Navigate to "Pages" section
    - Set source to "GitHub Actions"
+   - Select the "Deploy to GitHub Pages" workflow
 
 2. **Push to main/master branch**:
    ```bash
+   git add .
+   git commit -m "Deploy to GitHub Pages"
    git push origin main
    ```
 
-The workflow will automatically build and deploy your app to GitHub Pages.
+3. **Check deployment status**:
+   - Go to the "Actions" tab in your repository
+   - Monitor the deployment workflow
+   - Once complete, your app will be available at `https://yourusername.github.io/pixel-generator`
+
+### Troubleshooting Deployment Issues
+
+If deployment fails, try these steps:
+
+1. **Check repository permissions**:
+   - Go to Settings → Actions → General
+   - Ensure "Workflow permissions" is set to "Read and write permissions"
+   - Check "Allow GitHub Actions to create and approve pull requests"
+
+2. **Alternative deployment method**:
+   - If the main workflow fails, the `deploy-simple.yml` workflow will automatically run
+   - This uses the traditional `peaceiris/actions-gh-pages` action
+
+3. **Manual deployment**:
+   ```bash
+   npm run build
+   npm run deploy
+   # Then manually upload the 'out' folder to GitHub Pages
+   ```
 
 **Note:** No environment variables or secrets needed! Users will enter their own API keys directly in the app interface.
 
