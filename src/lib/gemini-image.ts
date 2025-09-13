@@ -28,10 +28,7 @@ export async function generatePixelArtImage(request: ImageGenerationRequest): Pr
     
     // Use the correct Gemini image generation model
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash-image-preview',
-      generationConfig: {
-        responseModalities: ["TEXT", "IMAGE"]
-      }
+      model: 'gemini-2.5-flash-image-preview'
     });
 
     // Create optimized prompt for pixel art generation
@@ -118,48 +115,65 @@ Make it ${width}x${height} pixels with clean, blocky pixel art style. Use a limi
 /**
  * Extract image data from Gemini response
  */
-async function extractImageFromResponse(response: any): Promise<string | null> {
+async function extractImageFromResponse(response: unknown): Promise<string | null> {
   try {
     console.log('Response structure:', JSON.stringify(response, null, 2));
     
+    // Type guard to check if response is an object
+    if (!response || typeof response !== 'object') {
+      console.log('Response is not an object');
+      return null;
+    }
+
+    const responseObj = response as Record<string, unknown>;
+    
     // Check if response has candidates array
-    if (response?.candidates && Array.isArray(response.candidates) && response.candidates.length > 0) {
-      const candidate = response.candidates[0];
+    if (responseObj.candidates && Array.isArray(responseObj.candidates) && responseObj.candidates.length > 0) {
+      const candidate = responseObj.candidates[0] as Record<string, unknown>;
       console.log('First candidate:', JSON.stringify(candidate, null, 2));
       
       // Check if candidate has content with parts
-      if (candidate?.content?.parts && Array.isArray(candidate.content.parts)) {
-        console.log('Found parts in candidate content:', candidate.content.parts.length);
-        for (let i = 0; i < candidate.content.parts.length; i++) {
-          const part = candidate.content.parts[i];
-          console.log(`Part ${i}:`, JSON.stringify(part, null, 2));
-          
-          // Look for inline data (image data)
-          if (part.inlineData?.data) {
-            console.log('Found image data in inlineData');
-            // Convert base64 data to data URL
-            return `data:image/png;base64,${part.inlineData.data}`;
+      if (candidate?.content && typeof candidate.content === 'object') {
+        const content = candidate.content as Record<string, unknown>;
+        if (content.parts && Array.isArray(content.parts)) {
+          console.log('Found parts in candidate content:', content.parts.length);
+          for (let i = 0; i < content.parts.length; i++) {
+            const part = content.parts[i] as Record<string, unknown>;
+            console.log(`Part ${i}:`, JSON.stringify(part, null, 2));
+            
+            // Look for inline data (image data)
+            if (part.inlineData && typeof part.inlineData === 'object') {
+              const inlineData = part.inlineData as Record<string, unknown>;
+              if (inlineData.data && typeof inlineData.data === 'string') {
+                console.log('Found image data in inlineData');
+                // Convert base64 data to data URL
+                return `data:image/png;base64,${inlineData.data}`;
+              }
+            }
           }
         }
       }
     }
 
     // Alternative: Check if response has parts directly
-    if (response?.parts && Array.isArray(response.parts)) {
-      console.log('Found parts directly in response:', response.parts.length);
-      for (let i = 0; i < response.parts.length; i++) {
-        const part = response.parts[i];
+    if (responseObj.parts && Array.isArray(responseObj.parts)) {
+      console.log('Found parts directly in response:', responseObj.parts.length);
+      for (let i = 0; i < responseObj.parts.length; i++) {
+        const part = responseObj.parts[i] as Record<string, unknown>;
         console.log(`Direct part ${i}:`, JSON.stringify(part, null, 2));
-        if (part.inlineData?.data) {
-          console.log('Found image data in response parts');
-          return `data:image/png;base64,${part.inlineData.data}`;
+        if (part.inlineData && typeof part.inlineData === 'object') {
+          const inlineData = part.inlineData as Record<string, unknown>;
+          if (inlineData.data && typeof inlineData.data === 'string') {
+            console.log('Found image data in response parts');
+            return `data:image/png;base64,${inlineData.data}`;
+          }
         }
       }
     }
 
     // Check for text response that might contain base64 image data
-    if (response?.text) {
-      const responseText = typeof response.text === 'function' ? response.text() : response.text;
+    if (responseObj.text) {
+      const responseText = typeof responseObj.text === 'function' ? (responseObj.text as () => unknown)() : responseObj.text;
       console.log('Text response:', responseText);
       if (typeof responseText === 'string') {
         const base64Match = responseText.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);

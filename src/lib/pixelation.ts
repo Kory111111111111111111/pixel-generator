@@ -245,12 +245,220 @@ function pixelateImageData(
 function reduceColors(
   data: Uint8ClampedArray,
   colorCount: number,
-  _algorithm: 'kmeans' | 'median-cut' | 'octree'
+  algorithm: 'kmeans' | 'median-cut' | 'octree'
 ): Uint8ClampedArray {
-  // Simple color reduction - group similar colors
+  switch (algorithm) {
+    case 'kmeans':
+      return reduceColorsKMeans(data, colorCount);
+    case 'median-cut':
+      return reduceColorsMedianCut(data, colorCount);
+    case 'octree':
+      return reduceColorsOctree(data, colorCount);
+    default:
+      // Fallback to simple quantization
+      return reduceColorsSimple(data, colorCount);
+  }
+}
+
+/**
+ * Simple quantization - group similar colors
+ */
+function reduceColorsSimple(data: Uint8ClampedArray, colorCount: number): Uint8ClampedArray {
   const newData = new Uint8ClampedArray(data);
   const step = Math.floor(256 / Math.sqrt(colorCount));
   
+  for (let i = 0; i < data.length; i += 4) {
+    newData[i] = Math.floor(data[i] / step) * step;     // R
+    newData[i + 1] = Math.floor(data[i + 1] / step) * step; // G
+    newData[i + 2] = Math.floor(data[i + 2] / step) * step; // B
+    // Keep alpha unchanged
+  }
+  
+  return newData;
+}
+
+/**
+ * K-means clustering for color reduction
+ */
+function reduceColorsKMeans(data: Uint8ClampedArray, colorCount: number): Uint8ClampedArray {
+  // Extract unique colors
+  const colors = new Map<string, number>();
+  for (let i = 0; i < data.length; i += 4) {
+    const color = `${data[i]},${data[i + 1]},${data[i + 2]}`;
+    colors.set(color, (colors.get(color) || 0) + 1);
+  }
+  
+  // Initialize centroids randomly
+  const colorArray = Array.from(colors.keys()).map(c => c.split(',').map(Number));
+  const centroids: number[][] = [];
+  for (let i = 0; i < colorCount && i < colorArray.length; i++) {
+    centroids.push([...colorArray[i % colorArray.length]]);
+  }
+  
+  // K-means iterations
+  for (let iter = 0; iter < 10; iter++) {
+    const clusters: number[][][] = Array(colorCount).fill(null).map(() => []);
+    
+    // Assign colors to nearest centroid
+    for (const color of colorArray) {
+      let minDist = Infinity;
+      let closestCentroid = 0;
+      
+      for (let i = 0; i < centroids.length; i++) {
+        const dist = Math.sqrt(
+          Math.pow(color[0] - centroids[i][0], 2) +
+          Math.pow(color[1] - centroids[i][1], 2) +
+          Math.pow(color[2] - centroids[i][2], 2)
+        );
+        if (dist < minDist) {
+          minDist = dist;
+          closestCentroid = i;
+        }
+      }
+      
+      clusters[closestCentroid].push(color);
+    }
+    
+    // Update centroids
+    for (let i = 0; i < centroids.length; i++) {
+      if (clusters[i].length > 0) {
+        centroids[i] = [
+          Math.round(clusters[i].reduce((sum, c) => sum + c[0], 0) / clusters[i].length),
+          Math.round(clusters[i].reduce((sum, c) => sum + c[1], 0) / clusters[i].length),
+          Math.round(clusters[i].reduce((sum, c) => sum + c[2], 0) / clusters[i].length)
+        ];
+      }
+    }
+  }
+  
+  // Map original colors to nearest centroids
+  const newData = new Uint8ClampedArray(data);
+  for (let i = 0; i < data.length; i += 4) {
+    const color = [data[i], data[i + 1], data[i + 2]];
+    let minDist = Infinity;
+    let closestCentroid = centroids[0];
+    
+    for (const centroid of centroids) {
+      const dist = Math.sqrt(
+        Math.pow(color[0] - centroid[0], 2) +
+        Math.pow(color[1] - centroid[1], 2) +
+        Math.pow(color[2] - centroid[2], 2)
+      );
+      if (dist < minDist) {
+        minDist = dist;
+        closestCentroid = centroid;
+      }
+    }
+    
+    newData[i] = closestCentroid[0];
+    newData[i + 1] = closestCentroid[1];
+    newData[i + 2] = closestCentroid[2];
+  }
+  
+  return newData;
+}
+
+/**
+ * Median cut algorithm for color reduction
+ */
+function reduceColorsMedianCut(data: Uint8ClampedArray, colorCount: number): Uint8ClampedArray {
+  // Extract unique colors with frequency
+  const colorMap = new Map<string, { color: number[], count: number }>();
+  for (let i = 0; i < data.length; i += 4) {
+    const color = `${data[i]},${data[i + 1]},${data[i + 2]}`;
+    if (colorMap.has(color)) {
+      colorMap.get(color)!.count++;
+    } else {
+      colorMap.set(color, { color: [data[i], data[i + 1], data[i + 2]], count: 1 });
+    }
+  }
+  
+  const colors = Array.from(colorMap.values());
+  
+  // Median cut algorithm
+  const buckets = [colors];
+  while (buckets.length < colorCount && buckets.some(b => b.length > 1)) {
+    // Find bucket with largest range
+    let maxRange = 0;
+    let bucketIndex = 0;
+    let splitChannel = 0;
+    
+    for (let i = 0; i < buckets.length; i++) {
+      const bucket = buckets[i];
+      if (bucket.length <= 1) continue;
+      
+      // Calculate range for each channel
+      const ranges = [0, 1, 2].map(channel => {
+        const values = bucket.map(c => c.color[channel]);
+        return Math.max(...values) - Math.min(...values);
+      });
+      
+      const maxChannelRange = Math.max(...ranges);
+      if (maxChannelRange > maxRange) {
+        maxRange = maxChannelRange;
+        bucketIndex = i;
+        splitChannel = ranges.indexOf(maxChannelRange);
+      }
+    }
+    
+    // Split the bucket
+    const bucket = buckets[bucketIndex];
+    bucket.sort((a, b) => a.color[splitChannel] - b.color[splitChannel]);
+    const median = Math.floor(bucket.length / 2);
+    
+    buckets[bucketIndex] = bucket.slice(0, median);
+    buckets.push(bucket.slice(median));
+  }
+  
+  // Calculate representative color for each bucket
+  const representativeColors = buckets.map(bucket => {
+    if (bucket.length === 0) return [0, 0, 0];
+    
+    const totalCount = bucket.reduce((sum, c) => sum + c.count, 0);
+    return [
+      Math.round(bucket.reduce((sum, c) => sum + c.color[0] * c.count, 0) / totalCount),
+      Math.round(bucket.reduce((sum, c) => sum + c.color[1] * c.count, 0) / totalCount),
+      Math.round(bucket.reduce((sum, c) => sum + c.color[2] * c.count, 0) / totalCount)
+    ];
+  });
+  
+  // Map original colors to representative colors
+  const newData = new Uint8ClampedArray(data);
+  for (let i = 0; i < data.length; i += 4) {
+    const color = [data[i], data[i + 1], data[i + 2]];
+    let minDist = Infinity;
+    let closestColor = representativeColors[0];
+    
+    for (const repColor of representativeColors) {
+      const dist = Math.sqrt(
+        Math.pow(color[0] - repColor[0], 2) +
+        Math.pow(color[1] - repColor[1], 2) +
+        Math.pow(color[2] - repColor[2], 2)
+      );
+      if (dist < minDist) {
+        minDist = dist;
+        closestColor = repColor;
+      }
+    }
+    
+    newData[i] = closestColor[0];
+    newData[i + 1] = closestColor[1];
+    newData[i + 2] = closestColor[2];
+  }
+  
+  return newData;
+}
+
+/**
+ * Octree algorithm for color reduction (simplified)
+ */
+function reduceColorsOctree(data: Uint8ClampedArray, colorCount: number): Uint8ClampedArray {
+  // Simplified octree implementation
+  // Group colors by quantizing to fewer bits per channel
+  const bitsPerChannel = Math.floor(Math.log2(colorCount) / 3);
+  const step = Math.floor(256 / (1 << bitsPerChannel));
+  
+  const newData = new Uint8ClampedArray(data);
   for (let i = 0; i < data.length; i += 4) {
     newData[i] = Math.floor(data[i] / step) * step;     // R
     newData[i + 1] = Math.floor(data[i + 1] / step) * step; // G
