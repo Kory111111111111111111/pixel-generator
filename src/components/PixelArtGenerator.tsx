@@ -8,11 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Download, Palette, RefreshCw, Settings } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, Palette, RefreshCw, Settings, Upload, Image as ImageIcon } from 'lucide-react';
 import { generatePixelArt, PixelArtRequest } from '@/lib/gemini';
+import { convertToPixelArt, applyPixelationEffect, getDefaultPixelationOptions, PixelationOptions } from '@/lib/pixelation';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { ThemeToggle } from './ThemeToggle';
+import ImageUpload from './ImageUpload';
+import PixelationSettings from './PixelationSettings';
 
 export default function PixelArtGenerator() {
   const [prompt, setPrompt] = useState('');
@@ -29,6 +33,13 @@ export default function PixelArtGenerator() {
     timestamp: Date;
   }>>([]);
   const [showApiKeyField, setShowApiKeyField] = useState(false);
+  
+  // Image pixelation state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [pixelationOptions, setPixelationOptions] = useState<PixelationOptions>(getDefaultPixelationOptions());
+  const [isPixelating, setIsPixelating] = useState(false);
+  const [pixelatedImage, setPixelatedImage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('generate');
 
   const styleOptions = [
     '16-bit retro gaming',
@@ -110,6 +121,54 @@ export default function PixelArtGenerator() {
     setGeneratedImage(null);
   };
 
+  const handleImageSelect = (file: File) => {
+    setSelectedImage(file);
+    setPixelatedImage(null);
+  };
+
+  const handleClearImage = () => {
+    setSelectedImage(null);
+    setPixelatedImage(null);
+  };
+
+  const handlePixelateImage = async () => {
+    if (!selectedImage) {
+      toast.error('Please select an image first');
+      return;
+    }
+
+    setIsPixelating(true);
+    
+    try {
+      let result;
+      
+      if (pixelationOptions.legoEffect) {
+        // Use image-pixelate for lego effect
+        result = await applyPixelationEffect(
+          selectedImage,
+          pixelationOptions.pixelSize,
+          true,
+          pixelationOptions.gridSize
+        );
+      } else {
+        // Use image-pixelizer for advanced pixelation
+        result = await convertToPixelArt(selectedImage, pixelationOptions);
+      }
+      
+      if (result.success && result.imageData) {
+        setPixelatedImage(result.imageData);
+        toast.success('Image pixelated successfully!');
+      } else {
+        toast.error(result.error || 'Failed to pixelate image');
+      }
+    } catch (error) {
+      toast.error('An error occurred while pixelating the image');
+      console.error('Pixelation error:', error);
+    } finally {
+      setIsPixelating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 p-4">
       <div className="max-w-6xl mx-auto">
@@ -143,18 +202,31 @@ export default function PixelArtGenerator() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Generation Panel */}
-          <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
-            <CardHeader>
-              <CardTitle className="text-card-foreground flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Generate New Art
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Describe your vision and let AI create pixel art for you
-              </CardDescription>
-            </CardHeader>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="generate" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              AI Generation
+            </TabsTrigger>
+            <TabsTrigger value="pixelate" className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Image Pixelation
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="generate" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Generation Panel */}
+              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <Palette className="h-5 w-5" />
+                    Generate New Art
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Describe your vision and let AI create pixel art for you
+                  </CardDescription>
+                </CardHeader>
             <CardContent className="space-y-4">
               {/* API Key Section */}
               <div className="space-y-2">
@@ -280,61 +352,167 @@ export default function PixelArtGenerator() {
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Generated Image Display */}
-          <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
-            <CardHeader>
-              <CardTitle className="text-card-foreground flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Generated Art
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Your AI-generated pixel art will appear here
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {generatedImage ? (
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <Image
-                      src={generatedImage}
-                      alt="Generated pixel art"
-                      width={256}
-                      height={256}
-                      className="max-w-full h-auto border-2 rounded-lg"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => handleDownload(generatedImage)}
-                      className="flex-1"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                    <Button
-                      onClick={() => setGeneratedImage(null)}
-                      variant="outline"
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                  <div className="text-center text-muted-foreground">
-                    <Palette className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No pixel art generated yet</p>
-                    <p className="text-sm">Enter a prompt and click generate</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              {/* Generated Image Display */}
+              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Generated Art
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Your AI-generated pixel art will appear here
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {generatedImage ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-center">
+                        <Image
+                          src={generatedImage}
+                          alt="Generated pixel art"
+                          width={256}
+                          height={256}
+                          className="max-w-full h-auto border-2 rounded-lg"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleDownload(generatedImage)}
+                          className="flex-1"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                        <Button
+                          onClick={() => setGeneratedImage(null)}
+                          variant="outline"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                      <div className="text-center text-muted-foreground">
+                        <Palette className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No pixel art generated yet</p>
+                        <p className="text-sm">Enter a prompt and click generate</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pixelate" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Image Upload */}
+              <ImageUpload
+                onImageSelect={handleImageSelect}
+                selectedImage={selectedImage}
+                onClearImage={handleClearImage}
+              />
+
+              {/* Pixelation Settings */}
+              <PixelationSettings
+                options={pixelationOptions}
+                onOptionsChange={setPixelationOptions}
+              />
+            </div>
+
+            {/* Pixelation Controls and Results */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Pixelation Button */}
+              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Pixelate Image
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Convert your uploaded image to pixel art
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={handlePixelateImage}
+                    disabled={isPixelating || !selectedImage}
+                    className="w-full"
+                  >
+                    {isPixelating ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Pixelating...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Pixelate Image
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Pixelated Image Display */}
+              <Card className="bg-card/80 backdrop-blur-sm border border-border/50">
+                <CardHeader>
+                  <CardTitle className="text-card-foreground flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Pixelated Result
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Your pixelated image will appear here
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pixelatedImage ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-center">
+                        <Image
+                          src={pixelatedImage}
+                          alt="Pixelated image"
+                          width={256}
+                          height={256}
+                          className="max-w-full h-auto border-2 rounded-lg"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleDownload(pixelatedImage, `pixelated-${Date.now()}.png`)}
+                          className="flex-1"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                        <Button
+                          onClick={() => setPixelatedImage(null)}
+                          variant="outline"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+                      <div className="text-center text-muted-foreground">
+                        <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No pixelated image yet</p>
+                        <p className="text-sm">Upload an image and click pixelate</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Generation History */}
         {generationHistory.length > 0 && (
