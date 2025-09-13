@@ -87,7 +87,7 @@ export async function generatePixelArt(request: PixelArtRequest): Promise<PixelA
   }
 }
 
-function generatePlaceholderPixelArt(parsedResponse: any): string {
+function generatePlaceholderPixelArt(parsedResponse: { palette?: string[] }): string {
   // Create a simple canvas-based pixel art placeholder
   // This is a simplified version - in production, you'd implement actual pixel art generation
   const canvas = document.createElement('canvas');

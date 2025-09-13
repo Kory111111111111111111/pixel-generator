@@ -7,11 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Download, Palette, RefreshCw, Settings } from 'lucide-react';
 import { generatePixelArt, PixelArtRequest } from '@/lib/gemini';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 export default function PixelArtGenerator() {
   const [prompt, setPrompt] = useState('');
@@ -121,8 +121,8 @@ export default function PixelArtGenerator() {
           </p>
           <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 max-w-2xl mx-auto">
             <p className="text-blue-200 text-sm">
-              <strong>Getting Started:</strong> You'll need a free Google Gemini API key. 
-              Click "Show API Key Field" below and get your key from{' '}
+              <strong>Getting Started:</strong> You&apos;ll need a free Google Gemini API key. 
+              Click &quot;Show API Key Field&quot; below and get your key from{' '}
               <a 
                 href="https://makersuite.google.com/" 
                 target="_blank" 
@@ -293,9 +293,11 @@ export default function PixelArtGenerator() {
               {generatedImage ? (
                 <div className="space-y-4">
                   <div className="flex justify-center">
-                    <img
+                    <Image
                       src={generatedImage}
                       alt="Generated pixel art"
+                      width={256}
+                      height={256}
                       className="max-w-full h-auto border-2 border-white/20 rounded-lg"
                       style={{ imageRendering: 'pixelated' }}
                     />
@@ -353,9 +355,11 @@ export default function PixelArtGenerator() {
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {generationHistory.map((item) => (
                   <div key={item.id} className="group relative">
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.prompt}
+                      width={96}
+                      height={96}
                       className="w-full h-24 object-cover rounded-lg border border-white/20 cursor-pointer hover:border-white/40 transition-colors"
                       style={{ imageRendering: 'pixelated' }}
                       onClick={() => setGeneratedImage(item.image)}
